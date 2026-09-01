@@ -1,0 +1,7 @@
+# dsh-input-history bundle patch: inserts the plugin row into the profile's
+# loader tree. Applied automatically when the bundle is added via
+# `dsh plugin --profile <name> add <path-or-git-url>` — do NOT repeat this
+# row in the profile's own cordis.patch.yml (duplicate ids crash the loader).
+- insert:
+    - id: dsh-input-history
+      name: 'dsh-input-history'

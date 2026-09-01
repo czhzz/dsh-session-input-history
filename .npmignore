@@ -1,0 +1,13 @@
+# local caches / logs
+.npm-cache/
+*.tgz
+npm-debug.log*
+
+# editor / OS
+.DS_Store
+*.swp
+.idea/
+.vscode/
+
+# dev-only files (host build verified via `npm test` + prepare)
+tests/

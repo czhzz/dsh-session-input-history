@@ -1,0 +1,78 @@
+{
+  "name": "dsh-input-history",
+  "version": "0.1.0",
+  "description": "DSH 输入历史导航插件（纯 client 双面）：对话输入框中按 ↑/↓ 方向键遍历当前会话发送过的消息（shell history 式交互），浏览中编辑或发送即退出。",
+  "keywords": [
+    "dsh",
+    "deepseek-harness",
+    "plugin",
+    "input",
+    "history",
+    "navigation"
+  ],
+  "author": "caozh",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/caozh/dsh-input-history.git"
+  },
+  "bugs": {
+    "url": "https://github.com/caozh/dsh-input-history/issues"
+  },
+  "homepage": "https://github.com/caozh/dsh-input-history#readme",
+  "engines": {
+    "node": ">=20"
+  },
+  "type": "module",
+  "main": "lib/index.js",
+  "types": "lib/types/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./lib/types/index.d.ts",
+      "default": "./lib/index.js"
+    },
+    "./client": {
+      "default": "./lib/client.js"
+    },
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "lib",
+    "src",
+    "scripts",
+    "tsconfig.json",
+    "cordis.patch.yml"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.json && node scripts/build.mjs",
+    "build:host": "tsc -p tsconfig.json",
+    "build:client": "node scripts/build.mjs",
+    "prepack": "npm run build",
+    "prepare": "npm run build",
+    "test": "node --experimental-strip-types --test \"tests/*.test.ts\""
+  },
+  "dsh": {
+    "client": {
+      "inject": [
+        "@deepseek-ai/dsh-client-runtime"
+      ],
+      "platform": "web"
+    },
+    "bundle": {
+      "patch": "./cordis.patch.yml"
+    }
+  },
+  "peerDependencies": {
+    "@deepseek-ai/cordis": "^4.0.1",
+    "@deepseek-ai/dsh-client-runtime": "^0.1.1-rc.2",
+    "@deepseek-ai/schemastery": "^3.18.1"
+  },
+  "devDependencies": {
+    "@types/node": "^26.2.0",
+    "@deepseek-ai/cordis": "^4.0.1",
+    "@deepseek-ai/dsh-client-runtime": "^0.1.1-rc.2",
+    "@deepseek-ai/schemastery": "^3.18.1",
+    "esbuild": "^0.25.0",
+    "typescript": "^7.0.2"
+  }
+}
