@@ -7,7 +7,7 @@ DSH 输入历史导航插件（纯 client）：对话输入框中按 **↑/↓ �
 **方式一：从 GitHub 安装（推荐）**
 
 ```sh
-dsh plugin --profile web add github:caozh/dsh-input-history
+dsh plugin --profile web add github:czhzz/dsh-input-history
 ```
 
 > git 安装拉取的是源码，首次 `add` 需要为该包授权构建脚本（pnpm ≥10 默认拒绝运行 git 依赖的 `prepare`）。首次失败时，把 pnpm 提示的包键复制进 profile 的 `pnpm-workspace.yaml`：
@@ -17,7 +17,7 @@ dsh plugin --profile web add github:caozh/dsh-input-history
 >   dsh-input-history: true
 > ```
 >
-> 然后重新执行 `add`。建议锁定 commit（`github:caozh/dsh-input-history#<sha>`）。
+> 然后重新执行 `add`。建议锁定 commit（`github:czhzz/dsh-input-history#<sha>`）。
 
 **方式二：从 npm 安装（发布后）**
 

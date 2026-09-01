@@ -14,12 +14,12 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/caozh/dsh-input-history.git"
+    "url": "git+https://github.com/czhzz/dsh-input-history.git"
   },
   "bugs": {
-    "url": "https://github.com/caozh/dsh-input-history/issues"
+    "url": "https://github.com/czhzz/dsh-input-history/issues"
   },
-  "homepage": "https://github.com/caozh/dsh-input-history#readme",
+  "homepage": "https://github.com/czhzz/dsh-input-history#readme",
   "engines": {
     "node": ">=20"
   },
