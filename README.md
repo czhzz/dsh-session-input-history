@@ -1,31 +1,33 @@
 # dsh-session-input-history
 
+[![npm version](https://img.shields.io/npm/v/dsh-session-input-history?color=cb3837&logo=npm)](https://www.npmjs.com/package/dsh-session-input-history)
+[![npm downloads](https://img.shields.io/npm/dm/dsh-session-input-history)](https://www.npmjs.com/package/dsh-session-input-history)
+[![GitHub stars](https://img.shields.io/github/stars/czhzz/dsh-session-input-history?logo=github)](https://github.com/czhzz/dsh-session-input-history/stargazers)
+[![GitHub issues](https://img.shields.io/github/issues/czhzz/dsh-session-input-history?logo=github)](https://github.com/czhzz/dsh-session-input-history/issues)
+[![License](https://img.shields.io/github/license/czhzz/dsh-session-input-history)](./LICENSE)
+[![Node](https://img.shields.io/badge/node-%3E%3D20-339933?logo=nodedotjs&logoColor=white)](https://nodejs.org)
+
 DSH **会话隔离**的输入历史导航插件（纯 client）：对话输入框中按 **↑/↓ 方向键**遍历**当前会话**发送过的消息（shell history 式交互）。
 
 > 与全局历史插件的区别：历史严格限定在**当前会话**内。切换到别的会话，↑ 拿到的就是那个会话自己的历史；新会话从空白开始，不会被其他会话或工作区的输入污染。历史也不落盘。
 
 ## 安装
 
-**方式一：从 GitHub 安装（推荐）**
+**方式一：从 npm 安装（推荐）**
+
+```sh
+dsh plugin --profile web add dsh-session-input-history
+```
+
+> 发布到 npm 的 tarball 已包含构建产物（`lib/`），安装即用，**不需要**授权构建脚本。
+
+**方式二：从 GitHub 安装**
 
 ```sh
 dsh plugin --profile web add github:czhzz/dsh-session-input-history
 ```
 
-> git 安装拉取的是源码，首次 `add` 需要为该包授权构建脚本（pnpm ≥10 默认拒绝运行 git 依赖的 `prepare`）。首次失败时，把 pnpm 提示的包键复制进 profile 的 `pnpm-workspace.yaml`：
->
-> ```yaml
-> allowBuilds:
->   dsh-session-input-history: true
-> ```
->
-> 然后重新执行 `add`。建议锁定 commit（`github:czhzz/dsh-session-input-history#<sha>`）。
-
-**方式二：从 npm 安装（发布后）**
-
-```sh
-dsh plugin --profile web add dsh-session-input-history
-```
+> 适合跟进未发布的提交。建议锁定 commit（`github:czhzz/dsh-session-input-history#<sha>`）。
 
 ## 交互
 
