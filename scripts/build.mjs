@@ -1,5 +1,5 @@
 /**
- * Build the dsh-input-history client bundle.
+ * Build the dsh-session-input-history client bundle.
  *
  * Produces lib/client.js in the wire format the DSH web shell expects:
  * a CJS factory handed to window.__ModuleLoader__.load({ id, factory }).
@@ -17,18 +17,22 @@ const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..')
 const MANIFEST = JSON.parse(readFileSync(join(ROOT, 'package.json'), 'utf8'))
 const PLUGIN_ID = MANIFEST.name
 
-/** Platform module table (must stay aligned with the shell's module table). */
+/**
+ * Platform module table — must stay aligned with the web shell's
+ * `staticModules` map (dsh-web-frontend boot facade). These ids resolve
+ * through the injected require at runtime; anything missing here gets
+ * inlined into the bundle instead.
+ */
 const EXTERNALS = [
   'react',
   'react/jsx-runtime',
   'react-dom',
   'react-dom/client',
-  'cordis',
+  '@deepseek-ai/cordis',
+  '@deepseek-ai/dsh-client-store',
   '@deepseek-ai/dsh-client-ui-slots',
-  '@deepseek-ai/dsh-client-web-react',
   '@deepseek-ai/dsh-client-ui-primitives',
-  '@deepseek-ai/dsh-client-schema-form',
-  '@deepseek-ai/dsh-client-runtime/client',
+  '@deepseek-ai/dsh-client-ui-dockkit',
 ]
 
 const require = createRequire(import.meta.url)

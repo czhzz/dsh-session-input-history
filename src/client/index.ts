@@ -1,173 +1,127 @@
-// dsh-input-history — client 半侧（输入历史导航）。
+// dsh-session-input-history — client 半侧（会话隔离的输入历史导航）。
 //
 // 在对话输入框中按 ↑/↓ 方向键遍历当前会话发送过的消息（shell history 式）。
 //
-// 实现要点：
-//  - 通过 conversation.input.left slot 挂一个不可见组件，用框架注入的
-//    useSession hook 订阅会话快照（session.nodes），提取 kind==='user'
-//    的 text block 作为历史数组；
-//  - 组件挂载时在 document 上挂捕获阶段 keydown 监听，命中 composer
-//    textarea 且 ↑/↓ 满足接管条件时阻止默认行为并写回草稿；
-//  - 写回草稿直接操作 textarea.value（原生 setter + input 事件），
-//    让 React 受控组件同步（官方 setDraft 不跨插件边界）。
+// 实现要点（对齐 dsh 0.1.6-alpha 一代的公开契约）：
+//  - 通过 conversation.input.left slot 挂一个不可见组件；该 slot 是 session
+//    scope，框架按 scope 注入标准 props：useInput / useConversation /
+//    inputActions；
+//  - 历史来源是 chat 视图快照（ConversationViewSnapshotMap 的 'chat' 槽）。
+//    视图快照按会话隔离，因此历史天然是「当前会话」的；
+//  - 草稿读写全部走公开面：useInput 读 draft，inputActions.setDraft 写回。
+//    旧版那套「原生 setter 改 textarea.value + 派发 input 事件」的受控组件
+//    hack 不再需要——新版 composer 是 Lexical 编辑器，也不再是 textarea；
+//  - 键盘接管：新版的 ComposerKeyboard 是包内私有面（契约明确写了不跨插件
+//    边界），插件拿不到官方键盘仲裁，因此在 document 捕获阶段自行接管方向键，
+//    用 composer 的 data-lexical-editor 标记确认焦点确实在输入框里。
 //
-// 类型：esbuild 只转译不查类型；本文件用宽松类型避免依赖缺失的 client 类型包。
+// 纯逻辑（历史提取 + 导航状态机）在 ./history.ts，单测直接加载那个模块。
 
-import type { Context } from 'cordis'
-import type { JSX } from 'react'
+import type { Context } from '@deepseek-ai/cordis'
 import { useEffect, useRef } from 'react'
+
+import { extractUserMessages, navigateHistory, type ChatSnapshotLike } from './history.ts'
 
 export const inject = ['slots']
 
-/** 会话快照的最小形状（宽松类型）。 */
-interface UserMsgNode {
-  kind: 'user'
-  content: readonly { type?: string; text?: string }[]
+/** 会话快照中本插件读取的部分。 */
+interface ConversationLike {
+  views?: { get: (target: string) => unknown }
 }
 
-interface SessionSnapshotLike {
-  nodes?: readonly UserMsgNode[]
+/** 输入状态中本插件读取的部分。 */
+interface InputStateLike {
+  draft?: string
 }
 
-// ---- 历史提取（纯函数，可单测） ----
+/** 公开输入动作面中本插件使用的方法。 */
+interface InputActionsLike {
+  setDraft: (text: string) => void
+}
 
-/** 从会话快照提取用户发送过的文本消息（去空白、去重、按时间顺序）。 */
-export function extractUserMessages(session: SessionSnapshotLike | undefined): string[] {
-  if (!session?.nodes) return []
-  const out: string[] = []
-  for (const node of session.nodes) {
-    if (node?.kind !== 'user') continue
-    const parts: string[] = []
-    for (const block of node.content ?? []) {
-      if (block?.type === 'text' && typeof block.text === 'string' && block.text.trim() !== '') {
-        parts.push(block.text)
-      }
-    }
-    const text = parts.join('\n').trim()
-    if (text !== '' && out[out.length - 1] !== text) out.push(text)
+/** 当前聚焦的 composer 编辑器；新版 composer 是 Lexical 的 contenteditable。 */
+function focusedComposer(): HTMLElement | null {
+  const active = document.activeElement
+  if (
+    active instanceof HTMLElement &&
+    active.isContentEditable &&
+    active.hasAttribute('data-lexical-editor')
+  ) {
+    return active
   }
-  return out
+  return null
 }
 
-// ---- 历史导航状态机（纯函数，可单测） ----
-
-/**
- * 计算方向键导航后的新状态。
- * @param history - 用户历史消息（时间正序，最新在最后）。
- * @param currentIndex - 当前浏览位置；-1 表示未在浏览（空草稿基线）。
- * @param direction - 'up' 向前（更旧）/ 'down' 向后（更新）。
- * @returns 新位置（-1 = 退出浏览，回空草稿）与对应草稿文本。
- */
-export function navigateHistory(
-  history: string[],
-  currentIndex: number,
-  direction: 'up' | 'down',
-): { index: number; text: string } {
-  if (history.length === 0) return { index: -1, text: '' }
-  if (direction === 'up') {
-    // 从 -1 或当前位置向前（更旧）。-1 的上一位置 = 最后一条（最新）。
-    const next = currentIndex === -1 ? history.length - 1 : Math.max(0, currentIndex - 1)
-    return { index: next, text: history[next] }
-  }
-  // down：向后（更新）。从最后一条再往下 = 退出浏览回空。
-  if (currentIndex === -1 || currentIndex >= history.length - 1) return { index: -1, text: '' }
-  const next = currentIndex + 1
-  return { index: next, text: history[next] }
-}
-
-// ---- 键盘处理 ----
-
-/** 找到 composer 的 textarea（会话输入框）。 */
-function findComposerTextarea(): HTMLTextAreaElement | null {
-  // composer 的 textarea：优先按 placeholder 特征找，退化为会话区域内的 textarea。
-  const candidates = document.querySelectorAll<HTMLTextAreaElement>('textarea')
-  for (const el of candidates) {
-    // 排除设置/搜索等非 composer 的 textarea：composer textarea 通常在
-    // 包含 aria-multiline 或特定 class 的容器里。这里用启发式：可见 + 可编辑。
-    if (!el.disabled && el.offsetParent !== null) return el
-  }
-  return candidates[0] ?? null
-}
-
-/** 用原生 setter 写 textarea 值并触发 input 事件（React 受控组件同步）。 */
-function setDraftText(textarea: HTMLTextAreaElement, text: string): void {
-  const proto = Object.getPrototypeOf(textarea) as HTMLTextAreaElement
-  const setter = Object.getOwnPropertyDescriptor(proto, 'value')?.set
-  if (setter !== undefined) {
-    setter.call(textarea, text)
-  } else {
-    textarea.value = text
-  }
-  textarea.dispatchEvent(new Event('input', { bubbles: true }))
-}
-
-/** 光标是否在首行（用于 ↑ 接管条件）。 */
-function caretAtFirstLine(textarea: HTMLTextAreaElement): boolean {
-  const caret = textarea.selectionStart ?? 0
-  const text = textarea.value
-  const firstNewline = text.indexOf('\n')
-  return firstNewline === -1 ? caret <= text.length : caret <= firstNewline
-}
-
-/** 光标是否在末尾（用于 ↓ 接管条件）。 */
-function caretAtEnd(textarea: HTMLTextAreaElement): boolean {
-  const caret = textarea.selectionEnd ?? 0
-  return caret >= textarea.value.length
-}
-
-// ---- 组件：输入框左端不可见 hook（借 slot 生命周期拿 useSession） ----
+// ---- 组件：输入框工具行左端的不可见 hook ----
 
 interface HistoryHookProps {
-  useSession: (selector: (s: unknown) => unknown) => unknown
+  useInput: (selector: (state: InputStateLike) => unknown) => unknown
+  useConversation: (selector: (snapshot: ConversationLike) => unknown) => unknown
+  inputActions: InputActionsLike
 }
 
-/** 输入框左端占位（不渲染可见内容，仅借会话 slot 生命周期订阅快照 + 挂键盘监听）。 */
-function HistoryHook(props: HistoryHookProps): JSX.Element | null {
-  const session = props.useSession((s) => s) as SessionSnapshotLike | undefined
-  const stateRef = useRef<{ history: string[]; index: number }>({ history: [], index: -1 })
+/** 不渲染任何内容，仅订阅会话快照 + 输入状态并接管方向键。 */
+function HistoryHook(props: HistoryHookProps): null {
+  const draft = (props.useInput((state) => state.draft) as string | undefined) ?? ''
+  const chat = props.useConversation((snapshot) => snapshot.views?.get('chat')) as
+    | ChatSnapshotLike
+    | undefined
 
-  // 会话变化时刷新历史。
-  const history = extractUserMessages(session)
+  // 快照引用变化时才重新提取，避免每次重渲染都铺一遍节点。
+  const derivedRef = useRef<{ source: unknown; history: string[] }>({
+    source: undefined,
+    history: [],
+  })
+  if (derivedRef.current.source !== chat) {
+    derivedRef.current = { source: chat, history: extractUserMessages(chat) }
+  }
+
+  // 键盘监听只挂一次，用 ref 读取最新状态与动作面。
+  const stateRef = useRef<{ history: string[]; index: number; draft: string }>({
+    history: [],
+    index: -1,
+    draft: '',
+  })
+  const actionsRef = useRef(props.inputActions)
+
+  const history = derivedRef.current.history
   stateRef.current.history = history
+  stateRef.current.draft = draft
+  // 历史变短（切会话）时丢弃越界的浏览位置。
   if (stateRef.current.index >= history.length) stateRef.current.index = -1
+  actionsRef.current = props.inputActions
 
   useEffect(() => {
-    const onKeyDown = (e: KeyboardEvent) => {
-      if (e.key !== 'ArrowUp' && e.key !== 'ArrowDown') return
-      const textarea = findComposerTextarea()
-      if (!textarea) return
-      if (document.activeElement !== textarea) return // 焦点不在输入框时不接管
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key !== 'ArrowUp' && event.key !== 'ArrowDown') return
+      // 组合键（选择、按词移动等）保持原生行为，不接管。
+      if (event.altKey || event.ctrlKey || event.metaKey || event.shiftKey) return
+      if (focusedComposer() === null) return
 
-      const { history: hist, index } = stateRef.current
+      const { history: hist, index, draft: current } = stateRef.current
       const browsing = index !== -1
-      const draft = textarea.value
 
-      if (e.key === 'ArrowUp') {
-        // 接管条件：正在浏览（任意光标位置），或未浏览但草稿为空且光标在首行。
-        const takeOver = browsing || (draft === '' && caretAtFirstLine(textarea))
-        if (!takeOver) return
-        e.preventDefault()
-        e.stopPropagation()
+      if (event.key === 'ArrowUp') {
+        // 接管条件：正在浏览（任意草稿），或未浏览但草稿为空。
+        if (!browsing && current !== '') return
         const next = navigateHistory(hist, index, 'up')
+        if (next.index === -1) return // 无历史：保持原生行为
+        event.preventDefault()
+        event.stopPropagation()
         stateRef.current.index = next.index
-        if (next.index !== -1) {
-          setDraftText(textarea, next.text)
-          textarea.setSelectionRange(next.text.length, next.text.length)
-        }
+        actionsRef.current.setDraft(next.text)
         return
       }
 
       // ArrowDown：仅浏览中接管。
-      if (e.key === 'ArrowDown') {
-        if (!browsing) return
-        e.preventDefault()
-        e.stopPropagation()
-        const next = navigateHistory(hist, index, 'down')
-        stateRef.current.index = next.index
-        setDraftText(textarea, next.text)
-        textarea.setSelectionRange(next.text.length, next.text.length)
-      }
+      if (!browsing) return
+      event.preventDefault()
+      event.stopPropagation()
+      const next = navigateHistory(hist, index, 'down')
+      stateRef.current.index = next.index
+      actionsRef.current.setDraft(next.text)
     }
+
     document.addEventListener('keydown', onKeyDown, true)
     return () => document.removeEventListener('keydown', onKeyDown, true)
   }, [])
@@ -178,13 +132,13 @@ function HistoryHook(props: HistoryHookProps): JSX.Element | null {
 // ---- 入口 ----
 
 export function apply(ctx: Context) {
-  // 注册输入框工具行左端的不可见 hook（仅借会话 slot 生命周期）。
+  // 注册输入框工具行左端的不可见 hook（借 session scope 拿标准 props）。
   ctx.slots.inject('conversation.input.left', () =>
     ctx.slots.register(
       {
         name: 'conversation.input.left',
-        id: 'dsh-input-history-hook',
-        inject: () => ({}),
+        id: 'dsh-session-input-history',
+        order: 0,
       },
       HistoryHook,
     ),

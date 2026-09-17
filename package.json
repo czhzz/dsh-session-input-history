@@ -1,25 +1,26 @@
 {
-  "name": "dsh-input-history",
+  "name": "dsh-session-input-history",
   "version": "0.1.0",
-  "description": "DSH 输入历史导航插件（纯 client 双面）：对话输入框中按 ↑/↓ 方向键遍历当前会话发送过的消息（shell history 式交互），浏览中编辑或发送即退出。",
+  "description": "DSH 会话隔离的输入历史导航插件（纯 client 双面）：对话输入框中按 ↑/↓ 方向键遍历当前会话发送过的消息（shell history 式交互），浏览中编辑或发送即退出。与全局历史插件的区别是历史严格限定在当前会话内。",
   "keywords": [
     "dsh",
     "deepseek-harness",
     "plugin",
     "input",
     "history",
-    "navigation"
+    "navigation",
+    "session"
   ],
   "author": "caozh",
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/czhzz/dsh-input-history.git"
+    "url": "git+https://github.com/czhzz/dsh-session-input-history.git"
   },
   "bugs": {
-    "url": "https://github.com/czhzz/dsh-input-history/issues"
+    "url": "https://github.com/czhzz/dsh-session-input-history/issues"
   },
-  "homepage": "https://github.com/czhzz/dsh-input-history#readme",
+  "homepage": "https://github.com/czhzz/dsh-session-input-history#readme",
   "engines": {
     "node": ">=20"
   },
@@ -54,7 +55,7 @@
   "dsh": {
     "client": {
       "inject": [
-        "@deepseek-ai/dsh-client-runtime"
+        "@deepseek-ai/dsh-client-ui-conversation"
       ],
       "platform": "web"
     },
@@ -63,15 +64,11 @@
     }
   },
   "peerDependencies": {
-    "@deepseek-ai/cordis": "^4.0.1",
-    "@deepseek-ai/dsh-client-runtime": "^0.1.1-rc.2",
-    "@deepseek-ai/schemastery": "^3.18.1"
+    "@deepseek-ai/cordis": "^4.0.2"
   },
   "devDependencies": {
     "@types/node": "^26.2.0",
-    "@deepseek-ai/cordis": "^4.0.1",
-    "@deepseek-ai/dsh-client-runtime": "^0.1.1-rc.2",
-    "@deepseek-ai/schemastery": "^3.18.1",
+    "@deepseek-ai/cordis": "^4.0.2",
     "esbuild": "^0.25.0",
     "typescript": "^7.0.2"
   }
