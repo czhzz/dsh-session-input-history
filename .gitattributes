@@ -1,0 +1,7 @@
+# Keep every tracked file LF in the working tree, whatever the developer's
+# core.autocrlf is. The committed `lib/` bundle is compared byte-for-byte by
+# the CI freshness check, so line-ending drift must not be able to fail it.
+* text=auto eol=lf
+
+# The bundle is generated; collapse it in diffs.
+lib/** linguist-generated=true
