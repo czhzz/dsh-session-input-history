@@ -22,7 +22,7 @@
   },
   "homepage": "https://github.com/czhzz/dsh-session-input-history#readme",
   "engines": {
-    "node": ">=20"
+    "node": "^22.19.0 || >=24.0.0"
   },
   "type": "module",
   "main": "lib/index.js",
