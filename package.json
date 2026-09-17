@@ -49,7 +49,6 @@
     "build:host": "tsc -p tsconfig.json",
     "build:client": "node scripts/build.mjs",
     "prepack": "npm run build",
-    "prepare": "npm run build",
     "test": "node --experimental-strip-types --test \"tests/*.test.ts\""
   },
   "dsh": {
