@@ -1,11 +1,9 @@
 # dsh-session-input-history
 
-[![npm version](https://img.shields.io/npm/v/dsh-session-input-history?color=cb3837&logo=npm)](https://www.npmjs.com/package/dsh-session-input-history)
-[![npm downloads](https://img.shields.io/npm/dm/dsh-session-input-history)](https://www.npmjs.com/package/dsh-session-input-history)
-[![GitHub stars](https://img.shields.io/github/stars/czhzz/dsh-session-input-history?logo=github)](https://github.com/czhzz/dsh-session-input-history/stargazers)
-[![GitHub issues](https://img.shields.io/github/issues/czhzz/dsh-session-input-history?logo=github)](https://github.com/czhzz/dsh-session-input-history/issues)
-[![License](https://img.shields.io/github/license/czhzz/dsh-session-input-history)](./LICENSE)
-[![Node](https://img.shields.io/badge/node-%3E%3D20-339933?logo=nodedotjs&logoColor=white)](https://nodejs.org)
+[![npm](https://img.shields.io/npm/v/dsh-session-input-history)](https://www.npmjs.com/package/dsh-session-input-history)
+[![license](https://img.shields.io/npm/l/dsh-session-input-history)](./LICENSE)
+[![node](https://img.shields.io/node/v/dsh-session-input-history)](https://nodejs.org)
+[![GitHub stars](https://img.shields.io/github/stars/czhzz/dsh-session-input-history)](https://github.com/czhzz/dsh-session-input-history)
 
 DSH **会话隔离**的输入历史导航插件（纯 client）：对话输入框中按 **↑/↓ 方向键**遍历**当前会话**发送过的消息（shell history 式交互）。
 
