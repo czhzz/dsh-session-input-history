@@ -1,6 +1,6 @@
 {
   "name": "dsh-session-input-history",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "DSH 会话隔离的输入历史导航插件（纯 client 双面）：对话输入框中按 ↑/↓ 方向键遍历当前会话发送过的消息（shell history 式交互），浏览中编辑或发送即退出。与全局历史插件的区别是历史严格限定在当前会话内。",
   "keywords": [
     "dsh",
